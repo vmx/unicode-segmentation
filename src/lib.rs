@@ -62,7 +62,7 @@ extern crate std;
 
 pub use grapheme::{Graphemes, GraphemeIndices};
 pub use tables::UNICODE_VERSION;
-pub use word::{UWordBounds, UWordBoundIndices, UnicodeWords};
+pub use word::{UWordBounds, UWordBoundIndices, UnicodeWords, UnicodeWordIndices};
 
 mod grapheme;
 mod tables;
@@ -140,6 +140,9 @@ pub trait UnicodeSegmentation {
     /// ```
     fn unicode_words<'a>(&'a self) -> UnicodeWords<'a>;
 
+    ///
+    fn unicode_word_indices<'a>(&'a self) -> UnicodeWordIndices<'a>;
+
     /// Returns an iterator over substrings of `self` separated on
     /// [UAX#29 word boundaries](http://www.unicode.org/reports/tr29/#Word_Boundaries).
     ///
@@ -186,6 +189,11 @@ impl UnicodeSegmentation for str {
     #[inline]
     fn unicode_words(&self) -> UnicodeWords {
         word::new_unicode_words(self)
+    }
+
+    #[inline]
+    fn unicode_word_indices(&self) -> UnicodeWordIndices {
+        word::new_unicode_word_indices(self)
     }
 
     #[inline]

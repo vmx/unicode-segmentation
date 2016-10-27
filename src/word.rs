@@ -78,6 +78,42 @@ impl<'a> DoubleEndedIterator for UWordBoundIndices<'a> {
     }
 }
 
+
+
+/// An iterator over the substrings of a string (and its offset) which, after splitting the string
+/// on [word boundaries](http://www.unicode.org/reports/tr29/#Word_Boundaries),
+/// contain any characters with the
+/// [Alphabetic](http://unicode.org/reports/tr44/#Alphabetic)
+/// property, or with
+/// [General_Category=Number](http://unicode.org/reports/tr44/#General_Category_Values).
+pub struct UnicodeWordIndices<'a> {
+    start_offset: usize,
+    iter: Filter<UWordBounds<'a>, fn(&&str) -> bool>,
+}
+
+impl<'a> Iterator for UnicodeWordIndices<'a> {
+    type Item = (usize, &'a str);
+
+    #[inline]
+    fn next(&mut self) -> Option<(usize, &'a str)> {
+        self.iter.next().map(|s| (s.as_ptr() as usize - self.start_offset, s))
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+}
+
+impl<'a> DoubleEndedIterator for UnicodeWordIndices<'a> {
+    #[inline]
+    fn next_back(&mut self) -> Option<(usize, &'a str)> {
+        self.iter.next_back().map(|s| (s.as_ptr() as usize - self.start_offset, s))
+    }
+}
+
+
+
 // state machine for word boundary rules
 #[derive(Clone,Copy,PartialEq,Eq)]
 enum UWordBoundsState {
@@ -503,4 +539,14 @@ pub fn new_unicode_words<'b>(s: &'b str) -> UnicodeWords<'b> {
     let has_alphanumeric: fn(&&str) -> bool = has_alphanumeric; // coerce to fn pointer
 
     UnicodeWords { inner: s.split_word_bounds().filter(has_alphanumeric) }
+}
+
+#[inline]
+pub fn new_unicode_word_indices<'b>(s: &'b str) -> UnicodeWordIndices<'b> {
+    use tables::util::is_alphanumeric;
+
+    fn has_alphanumeric(s: &&str) -> bool { s.chars().any(|c| is_alphanumeric(c)) }
+    let has_alphanumeric: fn(&&str) -> bool = has_alphanumeric; // coerce to fn pointer
+
+    UnicodeWordIndices { start_offset: s.as_ptr() as usize, iter: new_word_bounds(s).filter(has_alphanumeric) }
 }
